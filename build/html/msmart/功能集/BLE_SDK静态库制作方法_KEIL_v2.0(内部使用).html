@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLE_SDK静态库制作方法_KEIL _v2.0 (内部使用) &mdash; msdk v1 文档</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/translations.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> msdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">BLE_SDK静态库制作方法_KEIL _v2.0 (内部使用)</a><ul>
+<li><a class="reference internal" href="#id1">库制作流程</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">msdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>BLE_SDK静态库制作方法_KEIL _v2.0 (内部使用)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/msmart/功能集/BLE_SDK静态库制作方法_KEIL_v2.0(内部使用).md.txt" rel="nofollow"> 查看页面源码</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="ble-sdk-keil-v2-0">
+<h1>BLE_SDK静态库制作方法_KEIL _v2.0 (内部使用)<a class="headerlink" href="#ble-sdk-keil-v2-0" title="永久链接至标题"></a></h1>
+<p>根据BLE SDK详细指导书，需要制作3个静态库：base，gatt, ota，但对于制作非GCC编译工具链的静态库，比如KEIL，则需要建立三个工程，生成的库有调试版3个和发布版3个，共6个，并且需要根据用户选择的功能不同而加载不同的文件，FAE工作量大，且非常容易出错。</p>
+<p>因此，以下方法和工具可改善该情况。</p>
+<p>1）此对于非GCC编译环境，其它编译环境统一生成单个库，发布版库命名为：libBleSdk.xxx, 调试版库命名为：libBleSdkdb.xxx，两个库同时提供给用户。</p>
+<p>2）统一使用shell脚本：mk_msdk_script_for_keil.sh，来组织需要参与编译的文件和生成需要发布给用户的文件及文件结构。当制作完静态库后，将静态库及说明文档放入该文件夹中，即可打包给用户。</p>
+<blockquote>
+<div><p>注意：当BLE SDK源码文件发生改变(增加或删减)时，需要更新该脚本。</p>
+</div></blockquote>
+<div class="section" id="id1">
+<h2>库制作流程<a class="headerlink" href="#id1" title="永久链接至标题"></a></h2>
+<ol class="simple">
+<li><p>将shell脚本(mk_msdk_script_for_keil.sh)拷贝到BLE SDK目录下</p></li>
+<li><p>编辑shell脚本，设置芯片名称，并选择SDK需要支持的功能</p></li>
+</ol>
+<p><img alt="image-20210722133725562" src="msmart/功能集/image/BLE_SDK%E9%9D%99%E6%80%81%E5%BA%93%E5%88%B6%E4%BD%9C%E6%96%B9%E6%B3%95_KEIL_v2.0(%E5%86%85%E9%83%A8%E4%BD%BF%E7%94%A8)/image-20210722133725562.png" /></p>
+<ol class="simple">
+<li><p>执行shell脚本，在当前目录下生成output_for_keil目录，包含了如下两个文件夹。</p></li>
+</ol>
+<p><img alt="image-20210722135039559" src="msmart/功能集/image/BLE_SDK%E9%9D%99%E6%80%81%E5%BA%93%E5%88%B6%E4%BD%9C%E6%96%B9%E6%B3%95_KEIL_v2.0(%E5%86%85%E9%83%A8%E4%BD%BF%E7%94%A8)/image-20210722135039559.png" /></p>
+<ol>
+<li><p>将生成的用于制作静态库的源文件（SourceCode_For_Keil)，拷贝到KEIL工程路径下。</p></li>
+<li><p>打开Keil工程</p></li>
+<li><p>添加源码文件SoureceCode_For_Keil/src/xxx.c到工程中。</p></li>
+<li><p>添加头文件路径SoureceCode_For_Keil/inc到设置选项中。</p></li>
+<li><p>添加宏定义到设置选择项中, 宏定义应与shell脚本中选择的BLE SDK功能一致，如</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">MS_CONFIG_BLE_PERIPHERAL_SUPPORT</span>  <span class="n">MS_CONFIG_BLE_DT_SUPPORT</span> <span class="n">MS_CONFIG_BLE_OTA_SUPPORT</span>   <span class="n">MS_CONFIG_BLE_NONCONN_SUPPORT</span>
+</pre></div>
+</div>
+</li>
+<li><p>制作发行版静态库</p>
+<ol class="simple">
+<li><p>在ms_ble_debug.h文件中，修改调试等级为</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define MS_BLE_DEBUG_LEVEL   MS_BLE_DEBUG_LEVEL_INFO</span><span class="c1">//3</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>译器设置选项中，设置仅输出库文件，输出文件名设为: libBleSdk</p></li>
+<li><p>执行编译后，生成库文件：libBleSdk.lib</p></li>
+</ol>
+</li>
+<li><p>制作调试版静态库</p>
+<ol class="simple">
+<li><p>在ms_ble_debug.h文件中，修改调试等级为</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cp">#define MS_BLE_DEBUG_LEVEL   MS_BLE_DEBUG_LEVEL_DEBUG</span><span class="c1">//4</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>译器设置选项中，设置仅输出库文件，输出文件名设为: libBleSdkdb</p></li>
+<li><p>执行编译后，生成库文件：libBleSdkdb.lib</p></li>
+</ol>
+</li>
+<li><p>将生成的发行版和调试版静态库拷贝到shell脚本生成的发布给用户的文件目录ms_ble_lib下，并打包该文件夹，发给用户。</p></li>
+<li><p>Done</p></li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, maill.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

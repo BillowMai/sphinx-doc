@@ -1,0 +1,63 @@
+# BLE_SDK静态库制作方法_KEIL _v2.0 (内部使用)
+
+根据BLE SDK详细指导书，需要制作3个静态库：base，gatt, ota，但对于制作非GCC编译工具链的静态库，比如KEIL，则需要建立三个工程，生成的库有调试版3个和发布版3个，共6个，并且需要根据用户选择的功能不同而加载不同的文件，FAE工作量大，且非常容易出错。
+
+因此，以下方法和工具可改善该情况。
+
+1）此对于非GCC编译环境，其它编译环境统一生成单个库，发布版库命名为：libBleSdk.xxx, 调试版库命名为：libBleSdkdb.xxx，两个库同时提供给用户。
+
+2）统一使用shell脚本：mk_msdk_script_for_keil.sh，来组织需要参与编译的文件和生成需要发布给用户的文件及文件结构。当制作完静态库后，将静态库及说明文档放入该文件夹中，即可打包给用户。
+
+> 注意：当BLE SDK源码文件发生改变(增加或删减)时，需要更新该脚本。
+
+## 库制作流程
+
+1. 将shell脚本(mk_msdk_script_for_keil.sh)拷贝到BLE SDK目录下
+2. 编辑shell脚本，设置芯片名称，并选择SDK需要支持的功能
+
+![image-20210722133725562](image/BLE_SDK%E9%9D%99%E6%80%81%E5%BA%93%E5%88%B6%E4%BD%9C%E6%96%B9%E6%B3%95_KEIL_v2.0(%E5%86%85%E9%83%A8%E4%BD%BF%E7%94%A8)/image-20210722133725562.png)
+
+3. 执行shell脚本，在当前目录下生成output_for_keil目录，包含了如下两个文件夹。
+
+![image-20210722135039559](image/BLE_SDK%E9%9D%99%E6%80%81%E5%BA%93%E5%88%B6%E4%BD%9C%E6%96%B9%E6%B3%95_KEIL_v2.0(%E5%86%85%E9%83%A8%E4%BD%BF%E7%94%A8)/image-20210722135039559.png)
+
+4. 将生成的用于制作静态库的源文件（SourceCode_For_Keil)，拷贝到KEIL工程路径下。
+
+5. 打开Keil工程
+
+6. 添加源码文件SoureceCode_For_Keil/src/xxx.c到工程中。
+
+7. 添加头文件路径SoureceCode_For_Keil/inc到设置选项中。
+
+8. 添加宏定义到设置选择项中, 宏定义应与shell脚本中选择的BLE SDK功能一致，如
+
+   ```c
+   MS_CONFIG_BLE_PERIPHERAL_SUPPORT  MS_CONFIG_BLE_DT_SUPPORT MS_CONFIG_BLE_OTA_SUPPORT   MS_CONFIG_BLE_NONCONN_SUPPORT
+   ```
+
+9. 制作发行版静态库
+
+   1. 在ms_ble_debug.h文件中，修改调试等级为
+
+   ```c
+   #define MS_BLE_DEBUG_LEVEL   MS_BLE_DEBUG_LEVEL_INFO//3
+   ```
+
+   2. 译器设置选项中，设置仅输出库文件，输出文件名设为: libBleSdk
+
+   3. 执行编译后，生成库文件：libBleSdk.lib
+
+10. 制作调试版静态库
+
+    1. 在ms_ble_debug.h文件中，修改调试等级为
+
+    ```c
+    #define MS_BLE_DEBUG_LEVEL   MS_BLE_DEBUG_LEVEL_DEBUG//4
+    ```
+
+    2. 译器设置选项中，设置仅输出库文件，输出文件名设为: libBleSdkdb
+    3. 执行编译后，生成库文件：libBleSdkdb.lib
+
+11. 将生成的发行版和调试版静态库拷贝到shell脚本生成的发布给用户的文件目录ms_ble_lib下，并打包该文件夹，发给用户。
+
+12. Done

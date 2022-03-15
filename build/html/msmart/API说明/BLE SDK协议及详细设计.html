@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="zh-CN" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLE SDK协议 &mdash; msdk v1 文档</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/translations.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="../../genindex.html" />
+    <link rel="search" title="搜索" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> msdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="在文档中搜索" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">BLE SDK协议</a></li>
+<li><a class="reference internal" href="#id1">BLE SDK详细设计</a><ul>
+<li><a class="reference internal" href="#keil-todo">用KEIL工程制作静态库  （TODO:微清支持结束后，在这里总结）</a></li>
+<li><a class="reference internal" href="#m-smart-ble-iot">M-Smart BLE 应用协议（仅供IoT内部阅读）</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ble">BLE配网流程 （重要）</a></li>
+<li><a class="reference internal" href="#ble-log">BLE Log解析</a></li>
+<li><a class="reference internal" href="#id2">BLE_SDK 更新记录</a><ul>
+<li><a class="reference internal" href="#xa2">2021-03-05，新命令0xA2</a><ul>
+<li><a class="reference internal" href="#ms-ble-cmd-dt-notify-transmit-0xa2">新命令 MS_BLE_CMD_DT_NOTIFY_TRANSMIT = 0xA2</a></li>
+<li><a class="reference internal" href="#ms-ble-cmd-dev-confirm-0x66">新命令 MS_BLE_CMD_DEV_CONFIRM = 0x66</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#no-bind">2021-04-07，微清探针，新分支no-bind</a></li>
+<li><a class="reference internal" href="#nonconn-adv">2021-05-17, 蓝牙联动场景，添加不可连接广播 - nonconn-adv</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sdk">SDK接收流程解析</a></li>
+<li><a class="reference internal" href="#ota">OTA 固件升级功能</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">msdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>BLE SDK协议</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/msmart/API说明/BLE SDK协议及详细设计.md.txt" rel="nofollow"> 查看页面源码</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="ble-sdk">
+<h1>BLE SDK协议<a class="headerlink" href="#ble-sdk" title="永久链接至标题"></a></h1>
+<ul class="simple">
+<li><p>LE SDK解析处理《M-Smart BLE应用协议》（下简称《协议》）及下级协议规范的逻辑与动作。SDK不处理应用逻辑，如涉及到逻辑操作，交由应用层、适配层处理</p></li>
+</ul>
+</div>
+<div class="section" id="id1">
+<h1>BLE SDK详细设计<a class="headerlink" href="#id1" title="永久链接至标题"></a></h1>
+<div class="section" id="keil-todo">
+<h2>用KEIL工程制作静态库  （TODO:微清支持结束后，在这里总结）<a class="headerlink" href="#keil-todo" title="永久链接至标题"></a></h2>
+<p>linux下，使用.sh脚本编译，分析其宏定义：
+.sh
+read CONFIG_MS_BLE_OTA_VALUE  //用户选择（Y/N）
+CONFIG_MS_BLE_OTA=${CONFIG_MS_BLE_OTA_VALUE}  //新定义了CONFIG_MS_BLE_OTA</p>
+<p>makefile:
+CONFIG_MS_BLE_OTA –&gt; MS_CONFIG_BLE_OTA_SUPPORT //新定义了MS_CONFIG_BLE_OTA_SUPPORT
+编译链加入OTA相关.c文件</p>
+<p>.c：
+#ifdef MS_CONFIG_BLE_OTA_SUPPORT //do something</p>
+<p>所以，如果使用KEIL，并想启用OTA，则需要：</p>
+<ul class="simple">
+<li><p>根据makefile添加相关.c文件到KEIL工程中</p></li>
+<li><p>在KEIL选项中添加MS_CONFIG_BLE_OTA_SUPPORT</p></li>
+</ul>
+<p>linux编译生成的文件如下，供KEIL参考，发布给用户。</p>
+<p>/data/maill/msdk-compiler-link/2021-03-11-exp32-LED/xtensa-esp32s2-elf/bin/xtensa-esp32s2-elf-</p>
+<p>/data/maill/msdk_compiler_tool/2021-03-11-exp32-LED/xtensa-esp32s2-elf</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── msdk_esp32
+│   ├── ms_ble_adapter
+│   │   └── inc
+│   │       ├── ms_sal_ble_base.h
+│   │       ├── ms_sal_ble_common.h
+│   │       └── ms_sal_ble_peripheral.h
+│   ├── ms_ble_gatt
+│   │   └── inc
+│   │       ├── ms_ble_base.h
+│   │       ├── ms_ble_common.h
+│   │       ├── ms_ble_peripheral.h
+│   │       └── mSDK_list.h
+│   ├── ms_ble_lib
+│   │   ├── libBleSdkBase.a
+│   │   └── libBleSdkBle.a
+│   ├── platform.mk
+│   └── readme.md
+</pre></div>
+</div>
+</div>
+<div class="section" id="m-smart-ble-iot">
+<h2>M-Smart BLE 应用协议（仅供IoT内部阅读）<a class="headerlink" href="#m-smart-ble-iot" title="永久链接至标题"></a></h2>
+<p>http://confluence.msmart.com/pages/viewpage.action?pageId=17144836</p>
+</div>
+</div>
+<div class="section" id="ble">
+<h1>BLE配网流程 （重要）<a class="headerlink" href="#ble" title="永久链接至标题"></a></h1>
+<ol class="simple">
+<li><p>Dev广播</p></li>
+<li><p>Dev与APP进行GATT交互</p></li>
+<li><p>APP发0x01, 密钥协商, 一共发两次</p></li>
+<li><p>APP发0x63,获取Dev SN和Mac信息</p></li>
+<li><p>APP发0x69,发送SSID和PWD给Dev</p></li>
+<li><p>Dev进行广域网入网流程（与BLE无关）</p></li>
+<li><p>Dev发0x0D,告知APP入网结果</p></li>
+</ol>
+</div>
+<div class="section" id="ble-log">
+<h1>BLE Log解析<a class="headerlink" href="#ble-log" title="永久链接至标题"></a></h1>
+<p>[MS_BLE]read one valid pkg  //BLE收到一帧有效数据</p>
+<p>[MS_BLE]63_0D ble 0x0d msg //0x0D - WiFi连接状态主动上报
+[01 01 00 ]
+01-默认，
+01-    登陆云过程
+0x00：未有配网信息
+0x01：连接路由中
+0x02：DNS解析中(连接路由成功)
+0x03：登陆服务器中
+0x04：登陆成功
+00-错误码表，0表示无错误</p>
+</div>
+<div class="section" id="id2">
+<h1>BLE_SDK 更新记录<a class="headerlink" href="#id2" title="永久链接至标题"></a></h1>
+<div class="section" id="xa2">
+<h2>2021-03-05，新命令0xA2<a class="headerlink" href="#xa2" title="永久链接至标题"></a></h2>
+<div class="section" id="ms-ble-cmd-dt-notify-transmit-0xa2">
+<h3>新命令 MS_BLE_CMD_DT_NOTIFY_TRANSMIT = 0xA2<a class="headerlink" href="#ms-ble-cmd-dt-notify-transmit-0xa2" title="永久链接至标题"></a></h3>
+<p>data notify to app/gateway</p>
+<ul class="simple">
+<li><p>用户调用<code class="docutils literal notranslate"><span class="pre">ms_ble_app_msg_handle()</span></code>，发送事件MS_BLE_EVENT_TASK_NOTIFY_TRANSMIT</p></li>
+<li><p>SDK最终调用 <code class="docutils literal notranslate"><span class="pre">ms_ble_dt_notify_send(uint8_t</span> <span class="pre">*p_data,</span> <span class="pre">uint8_t</span> <span class="pre">p_len)</span></code> ,组命令帧：MS_BLE_CMD_DT_NOTIFY_TRANSMIT=0xA2（新添加），并发送给APP。</p></li>
+</ul>
+</div>
+<div class="section" id="ms-ble-cmd-dev-confirm-0x66">
+<h3>新命令 MS_BLE_CMD_DEV_CONFIRM = 0x66<a class="headerlink" href="#ms-ble-cmd-dev-confirm-0x66" title="永久链接至标题"></a></h3>
+</div>
+</div>
+<div class="section" id="no-bind">
+<h2>2021-04-07，微清探针，新分支no-bind<a class="headerlink" href="#no-bind" title="永久链接至标题"></a></h2>
+<p>密钥交互成功后，取消绑定流程(无需从APP获取设备ID), 直接强制设为已绑定状态，user即可进行DT操作。</p>
+<p>主要改动点：</p>
+<ul class="simple">
+<li><p>ms_ble_ecdh_key_interaction() 密钥交互成功，强制设定为绑定状态，并通知user。</p></li>
+<li><p>user无需提供设备ID适配层函数(因为绑定流程已取消，无设备ID)</p></li>
+</ul>
+<p>`</p>
+</div>
+<div class="section" id="nonconn-adv">
+<h2>2021-05-17, 蓝牙联动场景，添加不可连接广播 - nonconn-adv<a class="headerlink" href="#nonconn-adv" title="永久链接至标题"></a></h2>
+<blockquote>
+<div><p>尚未发布：分支：develop_solv_2.2</p>
+<p>协议相关：BLE 不可连接广播协议</p>
+</div></blockquote>
+<p>添加宏定义：MS_CONFIG_BLE_NONCONN_SUPPORT</p>
+<p>添加了相关文件： ms_ble_cipher.c,  mSDK_crc32.c,  mSDK_rc4.c</p>
+<p>添加文档： MSDK_ble编译选择文档.docx， 参考该文档制作库。</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="left"><strong>宏</strong></th>
+<th align="left"><strong>宏定义</strong></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">MS_CONFIG_BLE_PERIPHERAL_SUPPORT</td>
+<td align="left">外设角色定义</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_CENTRAL_SUPPORT</td>
+<td align="left">集中器角色定义</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_WIFI_SUPPORT</td>
+<td align="left">Wi-Fi配网功能</td>
+<td>单BLE下不可用</td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_OTA_SUPPORT</td>
+<td align="left">BLE OTA功能</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_DT_SUPPORT</td>
+<td align="left">蓝牙直连功能</td>
+<td>即透传功能</td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_NOBIND_SUPPORT</td>
+<td align="left">无绑定功能</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">MS_CONFIG_BLE_RCU_SUPPORT</td>
+<td align="left">遥控器功能</td>
+<td>非msmart协议，暂时无用</td>
+</tr>
+<tr>
+<td align="left">==MS_CONFIG_BLE_NONCONN_SUPPORT==</td>
+<td align="left">电控广播功能</td>
+<td><strong>用于蓝牙联动场景（部分需求）</strong></td>
+</tr>
+</tbody>
+</table><p>主要修改：</p>
+<ol>
+<li><p>用户事件添加了以下开始/停止不可连接广播，注意，该操作上电后即可调用，无需等待美居绑定。</p>
+<p>用户数据最大长度为16字节，比如用于广播温度等信息。</p>
+</li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">MS_BLE_EVENT_NONCONN_ADV_START</span><span class="p">,</span>     <span class="c1">//!&lt; start nonconn adv</span>
+  <span class="n">MS_BLE_EVENT_NONCONN_ADV_STOP</span><span class="p">,</span>     <span class="c1">//!&lt; stop nonconn adv</span>
+<span class="p">}</span> <span class="n">ms_ble_event_to_sdk_e</span><span class="p">;</span>
+</pre></div>
+</div>
+<ol class="simple">
+<li><p>接收端，集中器上电后，开启扫描广播，如果集中器支持蓝牙联动，则，将扫描到的数据包传给SDK接口，由SDK解析</p></li>
+</ol>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">ms_ble_scan_error_e</span> <span class="nf">ms_ble_scan_nonconn_adv_parse</span><span class="p">(</span><span class="kt">int8_t</span> <span class="n">rssi</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="o">*</span><span class="n">p_mac</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="o">*</span><span class="n">p_buf</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">p_len</span><span class="p">,</span> <span class="n">ms_ble_scan_noncon_parse_t</span> <span class="o">*</span><span class="n">p_parsed_data</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="sdk">
+<h1>SDK接收流程解析<a class="headerlink" href="#sdk" title="永久链接至标题"></a></h1>
+<p>用户将BLE收到的数据放入这个函数，该函数按BLE协议解析数据（含加解密）。</p>
+<p><code class="docutils literal notranslate"><span class="pre">ms_ble_read_buffer_handle(uint8_t</span> <span class="pre">*p_data,</span> <span class="pre">uint16_t</span> <span class="pre">p_len,</span> <span class="pre">uint16_t</span> <span class="pre">*offset,</span> <span class="pre">ms_ble_service_e</span> <span class="pre">p_service)</span></code></p>
+<p>如果是外设，则调用外设RX处理流程处理</p>
+<p><code class="docutils literal notranslate"><span class="pre">ms_ble_peripheral_gatt_cmd_handle()</span></code></p>
+<p>判断数据中的命令，根据BLE协议的FF80/90下的命令号，调用相应的处理函数，这些命令号与函数的关系定义在如下列表中，比如收到的是01命令则调用ms_ble_ecdh_key_interaction回调函数进一步处理数据</p>
+<p>const ms_ble_data_cmd_t t_peripheral_cfg_cmd_table[] = {
+{MS_BLE_CMD_ECDH_KEY_INTERACTION, ms_ble_ecdh_key_interaction},</p>
+<p>以上接收流程完成了</p>
+<p>但有些命令需要应答APP，比如查询设备信息，则在上面的回调函数中，调用组帧和发送。</p>
+<p><code class="docutils literal notranslate"><span class="pre">ms_ble_gatt_cmd_data_send(ms_ble_protocol_cmd_t</span> <span class="pre">*p_data,</span> <span class="pre">ms_ble_service_e</span> <span class="pre">p_service)</span></code></p>
+<ul class="simple">
+<li><p>ms_ble_read_buffer_handle的数据格式分析，（难分析，但可反向分析发送数据)</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">COMMON_DBG_TRACE</span><span class="p">(</span><span class="s2">&quot;ms_ble_read_buffer_handle[</span><span class="si">%d</span><span class="s2">-</span><span class="si">%x</span><span class="s2"> </span><span class="si">%x</span><span class="s2">]&quot;</span><span class="p">,</span><span class="n">p_len</span><span class="p">,</span><span class="n">p_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">p_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span> <span class="o">//</span><span class="n">p_data</span><span class="o">=</span><span class="n">m_data</span>
+<span class="n">msg</span><span class="o">.</span><span class="n">tid</span> <span class="o">=</span> <span class="n">m_data</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+<span class="n">msg</span><span class="o">.</span><span class="n">cmd</span> <span class="o">=</span> <span class="n">m_data</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>   <span class="o">///</span><span class="n">FF80</span> <span class="mi">01</span><span class="o">/</span><span class="mi">69</span> <span class="p">:</span> <span class="mi">01</span><span class="o">/</span><span class="mi">69</span><span class="n">为命令</span>
+<span class="n">msg</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="n">m_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">HEAD_LEN_GATT</span> <span class="o">-</span> <span class="mi">2</span><span class="p">);</span>
+<span class="n">msg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">m_data</span><span class="p">[</span><span class="mi">5</span><span class="p">];</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>发送数据格式 - 反推上面的接收数据格式</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">m_temp_buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0xAA</span><span class="p">;</span>
+    <span class="n">m_temp_buf</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mh">0x55</span><span class="p">;</span>
+    <span class="n">m_temp_buf</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">m_temp_buf_len</span> <span class="o">-</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="n">m_temp_buf</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">p_data</span><span class="o">-&gt;</span><span class="n">tid</span><span class="p">;</span>
+    <span class="n">m_temp_buf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">p_data</span><span class="o">-&gt;</span><span class="n">cmd</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ota">
+<h1>OTA 固件升级功能<a class="headerlink" href="#ota" title="永久链接至标题"></a></h1>
+<blockquote>
+<div><p>协议书：M-Smart蓝牙固件OTA协议  ——GATT方式</p>
+<p>概括：蓝牙OTA升级即模组OTA（非电控OTA),</p>
+</div></blockquote>
+<p>流程概要：</p>
+<ol class="simple">
+<li><p>用户提供OTA适配层接口，如flash读/写/擦除等</p></li>
+<li><p>如A/B区方案，收到新固件放入B区</p></li>
+<li><p>将app启动地址改指向B区(用户需要bootloader支持A/B区方案)</p></li>
+<li><p>app发启动升级指令，设备重启，跑B区新固件，Done</p></li>
+</ol>
+<p>关键步骤及工具：</p>
+<ol class="simple">
+<li><p>OTA固件打包器</p>
+<ol class="simple">
+<li><p>升级包放入打包器目录下</p></li>
+<li><p>编辑脚本ble_ota_bin.bat，添加升级包名称和生成物名称</p></li>
+<li><p>执行脚本，生成OTA升级包（根据协议书生成header)</p></li>
+</ol>
+</li>
+<li><p>OTA升级包命名</p>
+<ol class="simple">
+<li><p>叶楚汉</p></li>
+</ol>
+</li>
+<li><p>专用ISO美居APP下载</p>
+<ol class="simple">
+<li><p>找谁？</p></li>
+</ol>
+</li>
+<li><p>模组端OTA功能是否已实现</p>
+<ol class="simple">
+<li><p>代码确认</p></li>
+</ol>
+</li>
+</ol>
+<hr class="docutils" />
+<hr class="docutils" />
+<hr class="docutils" />
+<hr class="docutils" />
+<hr class="docutils" />
+<hr class="docutils" />
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; 版权所有 2022, maill.</p>
+  </div>
+
+  利用 <a href="https://www.sphinx-doc.org/">Sphinx</a> 构建，使用了 
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">主题</a>
+    由 <a href="https://readthedocs.org">Read the Docs</a>开发.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
